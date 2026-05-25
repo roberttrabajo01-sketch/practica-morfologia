@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Práctica de Morfología</title>
+  <style>
+    :root {
+      --bg: #faf8f2;
+      --card: #ffffff;
+      --card-soft: #f1e9d8;
+      --text: #1f2937;
+      --accent: #2f7a5a;
+      --accent-dark: #1d5d45;
+      --wrong: #c23b3b;
+      --correct: #307a38;
+      --border: #d7cbb8;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #f8f4ea 0%, #f0e8db 100%);
+      color: var(--text);
+    }
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 20px 40px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      letter-spacing: -0.03em;
+    }
+    header p {
+      margin: 12px auto 0;
+      max-width: 720px;
+      line-height: 1.7;
+      color: #4b4b4b;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin: 24px 0 12px;
+    }
+    .controls button {
+      border: none;
+      background: var(--accent);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.98rem;
+      transition: transform .18s ease, background .18s ease;
+    }
+    .controls button:hover {
+      transform: translateY(-1px);
+      background: var(--accent-dark);
+    }
+    .controls button.active {
+      background: #1b4d3f;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 22px;
+      box-shadow: 0 18px 45px rgba(31, 41, 55, 0.08);
+    }
+    .panel h2 {
+      margin-top: 0;
+      font-size: 1.55rem;
+    }
+    .info {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .info .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card-soft);
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      color: #3f4d4b;
+    }
+    .quiz-grid {
+      display: grid;
+      gap: 22px;
+    }
+    .quiz-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      min-width: 720px;
+    }
+    .quiz-table th,
+    .quiz-table td {
+      border: 1px solid var(--border);
+      padding: 12px 10px;
+      vertical-align: middle;
+    }
+    .quiz-table th {
+      background: var(--card-soft);
+      color: var(--text);
+      font-weight: 700;
+      text-align: left;
+    }
+    .quiz-table td:first-child {
+      width: 45%;
+    }
+    .cell-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: #fff;
+      border-radius: 14px;
+      padding: 14px 12px;
+      min-height: 80px;
+      border: 1px solid transparent;
+      transition: border-color .22s ease, background .22s ease, transform .18s ease;
+      cursor: pointer;
+    }
+    .cell-label:hover {
+      transform: translateY(-1px);
+      border-color: rgba(47, 122, 90, 0.35);
+    }
+    .cell-label input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .cell-label span {
+      display: block;
+      width: 100%;
+      min-height: 52px;
+      line-height: 1.4;
+      color: var(--text);
+      padding-right: 28px;
+      position: relative;
+    }
+    .cell-label span::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+    }
+    .cell-label input:checked + span::after {
+      content: 'X';
+      display: grid;
+      place-items: center;
+      color: var(--accent-dark);
+      border: 2px solid var(--accent-dark);
+      background: rgba(47, 122, 90, 0.1);
+    }
+    .cell-label.correct {
+      border-color: var(--correct);
+      background: #e8f8ea;
+    }
+    .cell-label.wrong {
+      border-color: var(--wrong);
+      background: #fee6e6;
+    }
+    .quiz-table tr.correct td {
+      background: #edf7ec;
+    }
+    .quiz-table tr.wrong td {
+      background: #fce9e9;
+    }
+    .question-card {
+      display: none;
+    }
+    .options,
+    .option {
+      display: none;
+    }
+    .result-box {
+      display: none;
+      padding: 18px 20px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      margin-top: 20px;
+      background: #fbfbf7;
+    }
+    .result-box.visible {
+      display: block;
+    }
+    .result-box h3 {
+      margin-top: 0;
+      font-size: 1.35rem;
+    }
+    .result-box p {
+      margin: 0.7rem 0;
+      line-height: 1.7;
+    }
+    .result-score {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+    .review-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+      justify-content: flex-end;
+    }
+    .review-buttons button {
+      border: none;
+      border-radius: 999px;
+      padding: 12px 18px;
+      cursor: pointer;
+      font-size: 0.96rem;
+      transition: transform .18s ease;
+    }
+    .review-buttons button:hover {
+      transform: translateY(-1px);
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-secondary {
+      background: #f2f0e6;
+      color: var(--text);
+    }
+    .explanation {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #fff7e6;
+      border: 1px solid #f1d3a3;
+      color: #5c4a2f;
+    }
+    .hint {
+      margin-top: 6px;
+      font-size: 0.95rem;
+      color: #5e5f5f;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      color: #4f4f4f;
+      font-size: 0.95rem;
+    }
+    @media (max-width: 760px) {
+      .review-buttons { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1>Práctica de Morfología</h1>
+      <p>Selecciona una categoría y clasifica cada término con una X en la columna correcta. Revisa respuestas y explicaciones al final.</p>
+    </header>
+    <div class="controls" role="tablist" aria-label="Seleccionar categoría">
+      <button type="button" data-category="lexico" class="active">Léxico</button>
+      <button type="button" data-category="neologismo">Neologismo y Calco</button>
+      <button type="button" data-category="recortes">Recortes</button>
+      <button type="button" data-category="membres">Unimembre y Bimembre</button>
+      <button type="button" data-category="derivacion">Derivación</button>
+      <button type="button" data-category="composicion">Composición</button>
+    </div>
+    <section class="panel">
+      <div class="info">
+        <span class="badge">Categoría activa: <strong id="categoria-nombre">Léxico</strong></span>
+        <span class="badge" id="categoria-instrucciones">Clasifica los términos con una X siguiendo el ejemplo.</span>
+        <span class="badge">Página <strong id="page-number">1</strong> / <strong id="page-total">5</strong></span>
+      </div>
+      <div id="quiz-area" class="quiz-grid"></div>
+      <div class="review-buttons">
+        <button class="btn-secondary" id="btn-reset">Intentar otra vez</button>
+        <button class="btn-primary" id="btn-check">Revisar respuestas</button>
+        <button class="btn-primary" id="btn-show-answers">Mostrar respuestas</button>
+        <button class="btn-primary" id="btn-next-page">Continuar</button>
+      </div>
+      <div id="result" class="result-box" role="status" aria-live="polite"></div>
+    </section>
+    <div class="footer">Desarrollado como herramienta de práctica para examen de morfología.</div>
+  </main>
+  <script>
+    const data = {
+      lexico: {
+        title: "Clasificación Léxica",
+        instructions: "Clasifica los siguientes términos con una X en la columna correcta. Valor 1 punto cada respuesta.",
+        columns: ["Cognitivo", "Tronco común", "Disciplinar básico", "Disciplinar específico", "Ultraespecializado"],
+        rows: [
+          { item: "Cognición", answer: 0, explanation: "Cognición es un término cognitivo porque describe un proceso mental." },
+          { item: "Hipótesis", answer: 0, explanation: "Hipótesis es un término que se utiliza en procesos cognitivos y académicos." },
+          { item: "Memoria", answer: 0, explanation: "Memoria hace referencia a una función cognitiva." },
+          { item: "Idea", answer: 0, explanation: "Idea es un concepto abstracto y cognitivo." },
+          { item: "Concepto", answer: 0, explanation: "Concepto pertenece al vocabulario cognitivo." },
+          { item: "Pan", answer: 1, explanation: "Pan es una palabra de uso común perteneciente al tronco léxico." },
+          { item: "Casa", answer: 1, explanation: "Casa es un término común del tronco léxico." },
+          { item: "Correr", answer: 1, explanation: "Correr es un verbo básico de uso cotidiano." },
+          { item: "Perro", answer: 1, explanation: "Perro es un sustantivo básico y común." },
+          { item: "Mesa", answer: 1, explanation: "Mesa es un sustantivo del tronco común." },
+          { item: "Ecosistema", answer: 2, explanation: "Ecosistema es un término disciplinar básico de biología." },
+          { item: "Tejido", answer: 2, explanation: "Tejido es un término técnico básico dentro de la biología." },
+          { item: "Cultura", answer: 2, explanation: "Cultura es un término disciplinar básico en ciencias sociales." },
+          { item: "Clima", answer: 2, explanation: "Clima es un término básico en geografía y ciencias ambientales." },
+          { item: "Síntesis", answer: 2, explanation: "Síntesis se utiliza como término básico en varias disciplinas." },
+          { item: "Célula", answer: 3, explanation: "Célula es un término disciplinar específico de biología." },
+          { item: "Covalente", answer: 3, explanation: "Covalente es un término específico de química." },
+          { item: "Alófono", answer: 3, explanation: "Alófono es un término específico de lingüística." },
+          { item: "Átomo", answer: 3, explanation: "Átomo es un término disciplinar específico de física y química." },
+          { item: "Gramática", answer: 3, explanation: "Gramática es un término específico de linguística." },
+          { item: "Metástasis", answer: 4, explanation: "Metástasis es un término ultraespecializado en medicina." },
+          { item: "Oncología", answer: 4, explanation: "Oncología es un término ultraespecializado de la medicina." },
+          { item: "Epitelio", answer: 4, explanation: "Epitelio es un término médico ultraespecializado." },
+          { item: "Hidrólisis", answer: 4, explanation: "Hidrólisis es un término ultraespecializado de química." },
+          { item: "Fotón", answer: 4, explanation: "Fotón es un término ultraespecializado de física." }
+        ]
+      },
+      neologismo: {
+        title: "Neologismos y Calcos",
+        instructions: "Clasifica los términos con una X en la columna correcta. Valor 1 punto cada respuesta.",
+        columns: ["Préstamo puro", "Préstamo adaptado", "Calco léxico", "Calco semántico"],
+        rows: [
+          { item: "Aktionsart", answer: 0, explanation: "Aktionsart es un préstamo puro que se mantiene en su forma original." },
+          { item: "Shopping Center", answer: 0, explanation: "Shopping Center es un préstamo puro del inglés." },
+          { item: "Sticker", answer: 0, explanation: "Sticker es un préstamo puro adoptado sin cambios." },
+          { item: "Parking", answer: 0, explanation: "Parking es un préstamo puro inglés sin adaptación." },
+          { item: "Marketing", answer: 0, explanation: "Marketing es un préstamo puro del inglés." },
+          { item: "Emoji", answer: 1, explanation: "Emoji es un préstamo adaptado de japonés al español." },
+          { item: "Emoticon", answer: 1, explanation: "Emoticon es un préstamo adaptado en forma al español." },
+          { item: "Escaneo", answer: 1, explanation: "Escaneo es un préstamo adaptado del inglés scan." },
+          { item: "Computadora", answer: 1, explanation: "Computadora es un préstamo adaptado al español." },
+          { item: "Fútbol", answer: 1, explanation: "Fútbol es un préstamo adaptado del inglés football." },
+          { item: "Rascacielos", answer: 2, explanation: "Rascacielos es un calco léxico del inglés skyscraper." },
+          { item: "Aire acondicionado", answer: 2, explanation: "Aire acondicionado es un calco léxico del inglés air conditioning." },
+          { item: "Lavarropa", answer: 2, explanation: "Lavarropa es un calco léxico de washing machine." },
+          { item: "Guardaespaldas", answer: 2, explanation: "Guardaespaldas es un calco léxico del inglés bodyguard." },
+          { item: "Lavajillas", answer: 2, explanation: "Lavajillas es un calco léxico del inglés dishwasher." },
+          { item: "Rock pesado", answer: 3, explanation: "Rock pesado es un calco semántico de heavy rock." },
+          { item: "Villano / villain", answer: 3, explanation: "Villano en el sentido de 'antagonista' es un calco semántico." },
+          { item: "Teléfono inteligente", answer: 3, explanation: "Teléfono inteligente es un calco semántico de smartphone." },
+          { item: "Ratón", answer: 3, explanation: "Ratón es un calco semántico de mouse en informática." },
+          { item: "Clic", answer: 3, explanation: "Clic es un calco semántico del sonido click." },
+          { item: "Selfi", answer: 1, explanation: "Selfi es un préstamo adaptado del inglés selfie." },
+          { item: "Bicicleta eléctrica", answer: 2, explanation: "Bicicleta eléctrica es un calco léxico del inglés electric bicycle." },
+          { item: "Streaming", answer: 0, explanation: "Streaming es un préstamo puro del inglés." },
+          { item: "Autoayuda", answer: 2, explanation: "Autoayuda es un calco léxico del inglés self-help." }
+        ]
+      },
+      recortes: {
+        title: "Recortes y abreviaciones",
+        instructions: "Marca con una X el tipo de recorte adecuado.",
+        columns: ["Aféresis", "Apócope", "Abreviatura", "Acrónimo", "Yuxtapuesta", "Binominal", "Preposicional"],
+        rows: [
+          { item: "Foto", answer: 1, explanation: "Foto es una apócope de fotografía." },
+          { item: "Profe", answer: 1, explanation: "Profe es una apócope de profesor/a." },
+          { item: "Tele", answer: 1, explanation: "Tele es una apócope de televisión." },
+          { item: "Auto", answer: 1, explanation: "Auto es una apócope de automóvil." },
+          { item: "Moto", answer: 1, explanation: "Moto es una apócope de motocicleta." },
+          { item: "Adiós", answer: 1, explanation: "Adiós es una apócope de a Dios." },
+          { item: "Dr.", answer: 2, explanation: "Dr. es una abreviatura de doctor." },
+          { item: "Sra.", answer: 2, explanation: "Sra. es una abreviatura de señora." },
+          { item: "Lic.", answer: 2, explanation: "Lic. es una abreviatura de licenciado." },
+          { item: "Prof.", answer: 2, explanation: "Prof. es una abreviatura de profesor." },
+          { item: "ONU", answer: 3, explanation: "ONU es un acrónimo formado por iniciales." },
+          { item: "NASA", answer: 3, explanation: "NASA es un acrónimo de National Aeronautics and Space Administration." },
+          { item: "OEA", answer: 3, explanation: "OEA es un acrónimo de Organización de los Estados Americanos." },
+          { item: "UNICEF", answer: 3, explanation: "UNICEF es un acrónimo de fondo de Naciones Unidas para la infancia." },
+          { item: "Café-teatro", answer: 4, explanation: "Café-teatro es una composición yuxtapuesta." },
+          { item: "Espacio-tiempo", answer: 5, explanation: "Espacio-tiempo es una construcción binominal." },
+          { item: "Pan y queso", answer: 5, explanation: "Pan y queso es una expresión binominal." },
+          { item: "Rey y reina", answer: 5, explanation: "Rey y reina es una construcción binominal." },
+          { item: "Dientes y muelas", answer: 5, explanation: "Dientes y muelas es una expresión binominal." },
+          { item: "Niños y niñas", answer: 5, explanation: "Niños y niñas es una construcción binominal." },
+          { item: "Casa de campo", answer: 6, explanation: "Casa de campo es una construcción preposicional." },
+          { item: "Libro de texto", answer: 6, explanation: "Libro de texto es una construcción preposicional." },
+          { item: "Agua de lluvia", answer: 6, explanation: "Agua de lluvia es una construcción preposicional." },
+          { item: "Fruta de temporada", answer: 6, explanation: "Fruta de temporada es una construcción preposicional." },
+          { item: "Banco de datos", answer: 6, explanation: "Banco de datos es una construcción preposicional." }
+        ]
+      },
+      membres: {
+        title: "Unimembre y Bimembre",
+        instructions: "Marca con una X si la unidad es unimembre o bimembre.",
+        columns: ["Unimembre", "Bimembre"],
+        rows: [
+          { item: "Corre", answer: 0, explanation: "Corre es unimembre porque no tiene sujeto explícito." },
+          { item: "¡Abran paso!", answer: 0, explanation: "¡Abran paso! es unimembre al no presentar sujeto." },
+          { item: "Silencio", answer: 0, explanation: "Silencio es unimembre porque funciona como una unidad independiente." },
+          { item: "Gracias", answer: 0, explanation: "Gracias es unimembre como expresión completa." },
+          { item: "Hola", answer: 0, explanation: "Hola es unimembre como saludo sin sujeto." },
+          { item: "El perro ladra", answer: 1, explanation: "El perro ladra es bimembre con sujeto y predicado." },
+          { item: "Mi hermana canta", answer: 1, explanation: "Mi hermana canta es bimembre con sujeto y predicado." },
+          { item: "La casa es grande", answer: 1, explanation: "La casa es grande es bimembre con sujeto y predicado." },
+          { item: "Los niños juegan", answer: 1, explanation: "Los niños juegan es bimembre con sujeto y predicado." },
+          { item: "Ella estudia", answer: 1, explanation: "Ella estudia es bimembre con sujeto y predicado." },
+          { item: "Pedro compró pan", answer: 1, explanation: "Pedro compró pan es bimembre con sujeto y predicado." },
+          { item: "El coche llegó", answer: 1, explanation: "El coche llegó es bimembre con sujeto y predicado." },
+          { item: "La comida está lista", answer: 1, explanation: "La comida está lista es bimembre con sujeto y predicado." },
+          { item: "María canta", answer: 1, explanation: "María canta es bimembre con sujeto y predicado." },
+          { item: "El río corre", answer: 1, explanation: "El río corre es bimembre con sujeto y predicado." },
+          { item: "Espera", answer: 0, explanation: "Espera es unimembre porque funciona como una instrucción sin sujeto." },
+          { item: "Fuego", answer: 0, explanation: "Fuego es unimembre cuando se usa como interjección." },
+          { item: "Cuidado", answer: 0, explanation: "Cuidado es unimembre como advertencia." },
+          { item: "¡Vamos!", answer: 0, explanation: "¡Vamos! es unimembre como mandato o invitación." },
+          { item: "¡Bravo!", answer: 0, explanation: "¡Bravo! es unimembre como exclamación." },
+          { item: "Tal vez", answer: 0, explanation: "Tal vez es unimembre como expresión de posibilidad." },
+          { item: "La niña canta", answer: 1, explanation: "La niña canta es bimembre con sujeto y predicado." },
+          { item: "Los pájaros vuelan", answer: 1, explanation: "Los pájaros vuelan es bimembre con sujeto y predicado." },
+          { item: "El profesor explica", answer: 1, explanation: "El profesor explica es bimembre con sujeto y predicado." },
+          { item: "La puerta se abre", answer: 1, explanation: "La puerta se abre es bimembre con sujeto y predicado." }
+        ]
+      },
+      derivacion: {
+        title: "Derivación y Afijos",
+        instructions: "Identifica el tipo de afijo. Separe la base y el afijo con un guion (ej.: in-capaz).",
+        columns: ["Prefijo","Sufijo","Interfijo","Circunfijo","Parasintético","No afijo"],
+        rows: [
+          { item: "in-capaz", answer: 0, explanation: "'in-' es un prefijo privativo que se antepone a la base." },
+          { item: "re-hacer", answer: 0, explanation: "'re-' es un prefijo de reiteración." },
+          { item: "feliz-mente", answer: 1, explanation: "'-mente' es un sufijo formador de adverbios." },
+          { item: "liber-ador", answer: 1, explanation: "'-ador' es un sufijo formador de agente." },
+          { item: "pan-adero", answer: 1, explanation: "'-adero' es un sufijo formador de oficio o lugar." },
+          { item: "auto-móvil", answer: 0, explanation: "'auto-' es un prefijo/autoelemento de composición." },
+          { item: "soci-o-económico", answer: 2, explanation: "La 'o' es un interfijo que conecta raíces en composiciones cultas." },
+          { item: "ge- -t", answer: 3, explanation: "Ejemplo ilustrativo de circunfijo (aparece en otros idiomas como alemán: ge- -t)." },
+          { item: "niñ-o", answer: 5, explanation: "Aquí se muestra la forma base+flexión; marcado como 'No afijo' para este ejercicio." },
+          { item: "bio-grafía", answer: 2, explanation: "La 'o' funciona como interfijo en composiciones cultas como 'biografía'." }
+        ]
+      },
+      composicion: {
+        title: "Composición",
+        instructions: "Clasifica la palabra compuesta: culta, cultismo, coloquial o funcional.",
+        columns: ["Cultas","Cultismos","Coloquiales","Funcionales"],
+        rows: [
+          { item: "filología", answer: 0, explanation: "Término culto de origen griego." },
+          { item: "lexicografía", answer: 0, explanation: "Término culto y técnico." },
+          { item: "sacapuntas", answer: 2, explanation: "Compuesto de uso coloquial y cotidiano." },
+          { item: "pararrayos", answer: 3, explanation: "Compuesto con función técnica/práctica (funcional)." },
+          { item: "hipopótamo", answer: 0, explanation: "Palabra culta de origen griego." },
+          { item: "subrayar", answer: 3, explanation: "Verbo con uso funcional en redacción y enseñanza." },
+          { item: "tocadiscos", answer: 2, explanation: "Compuesto coloquial de uso cotidiano." },
+          { item: "audiovisual", answer: 1, explanation: "Cultismo formado por elementos cultos (audio + visual)." },
+          { item: "rascacielos", answer: 0, explanation: "Compuesto y calco que entró como término culto/tecnicista." },
+          { item: "paraguas", answer: 2, explanation: "Compuesto de uso práctico y coloquial." }
+        ]
+      }
+    };
+
+    const categoryButtons = document.querySelectorAll('.controls button');
+    const quizArea = document.getElementById('quiz-area');
+    const categoryName = document.getElementById('categoria-nombre');
+    const categoryInstructions = document.getElementById('categoria-instrucciones');
+    const pageNumber = document.getElementById('page-number');
+    const pageTotal = document.getElementById('page-total');
+    const btnCheck = document.getElementById('btn-check');
+    const btnReset = document.getElementById('btn-reset');
+    const btnShowAnswers = document.getElementById('btn-show-answers');
+    const btnNextPage = document.getElementById('btn-next-page');
+    const resultBox = document.getElementById('result');
+    let currentCategory = 'lexico';
+    let currentPage = 1;
+    let currentQuestions = [];
+    const pageOrders = {};
+    const showFixedFirstPage = {
+      lexico: true,
+      neologismo: true,
+      recortes: true,
+      membres: true
+      ,derivacion: true
+      ,composicion: true
+    };
+
+    function shuffle(array) {
+      return array.slice().sort(() => Math.random() - 0.5);
+    }
+
+    function validateData() {
+      Object.entries(data).forEach(([category, info]) => {
+        const cols = info.columns.length;
+        info.rows.forEach((row, index) => {
+          if (typeof row.answer !== 'number' || row.answer < 0 || row.answer >= cols) {
+            console.warn(`Validación: categoría ${category}, fila ${index + 1} (${row.item}) tiene respuesta inválida ${row.answer}. Debe estar entre 0 y ${cols - 1}.`);
+          }
+        });
+      });
+    }
+
+    function chooseQuestions(category) {
+      const rows = data[category].rows;
+      const pageSize = 5;
+      const totalPages = Math.ceil(rows.length / pageSize);
+      currentPage = Math.min(currentPage, totalPages);
+      pageNumber.textContent = currentPage;
+      pageTotal.textContent = totalPages;
+
+      if (showFixedFirstPage[category] && currentPage === 1) {
+        return rows.slice(0, pageSize);
+      }
+
+      if (!pageOrders[category]) {
+        const pool = showFixedFirstPage[category] ? rows.slice(pageSize) : rows;
+        pageOrders[category] = shuffle(pool);
+      }
+
+      const pageIndex = showFixedFirstPage[category] ? currentPage - 2 : currentPage - 1;
+      const start = pageIndex * pageSize;
+      return pageOrders[category].slice(start, start + pageSize);
+    }
+
+    function renderQuestions() {
+      quizArea.innerHTML = '';
+      resultBox.classList.remove('visible');
+      const category = data[currentCategory];
+      categoryName.textContent = category.title;
+      categoryInstructions.textContent = category.instructions;
+      currentQuestions = chooseQuestions(currentCategory);
+      const table = document.createElement('table');
+      table.className = 'quiz-table';
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      const itemHeader = document.createElement('th');
+      itemHeader.textContent = 'Elemento';
+      headerRow.appendChild(itemHeader);
+      category.columns.forEach(column => {
+        const th = document.createElement('th');
+        th.textContent = column;
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+      const tbody = document.createElement('tbody');
+      currentQuestions.forEach((rowData, index) => {
+        const row = document.createElement('tr');
+        const itemCell = document.createElement('td');
+        itemCell.textContent = rowData.item;
+        row.appendChild(itemCell);
+        category.columns.forEach((_, i) => {
+          const cell = document.createElement('td');
+          const label = document.createElement('label');
+          label.className = 'cell-label';
+          const input = document.createElement('input');
+          input.type = 'radio';
+          input.name = `q-${index}`;
+          input.value = i;
+          const span = document.createElement('span');
+          span.innerHTML = '&nbsp;';
+          label.appendChild(input);
+          label.appendChild(span);
+          cell.appendChild(label);
+          row.appendChild(cell);
+        });
+        tbody.appendChild(row);
+      });
+      table.appendChild(tbody);
+      quizArea.appendChild(table);
+    }
+
+    function showAnswers() {
+      currentQuestions.forEach((question, index) => {
+        const inputs = Array.from(document.querySelectorAll(`input[name="q-${index}"]`));
+        const row = inputs[0]?.closest('tr');
+        inputs.forEach(input => {
+          const parent = input.parentElement;
+          parent.classList.remove('correct', 'wrong');
+          const value = Number(input.value);
+          if (value === question.answer) parent.classList.add('correct');
+          if (input.checked && value !== question.answer) parent.classList.add('wrong');
+          input.checked = value === question.answer;
+        });
+        if (row) {
+          row.classList.remove('wrong');
+          row.classList.add('correct');
+          const nextRow = row.nextElementSibling;
+          if (nextRow?.querySelector('.explanation')) nextRow.remove();
+          const explanation = document.createElement('div');
+          explanation.className = 'explanation';
+          explanation.innerHTML = `<strong>Explicación:</strong> ${question.explanation}`;
+          const explanationCell = document.createElement('td');
+          explanationCell.colSpan = data[currentCategory].columns.length + 1;
+          explanationCell.appendChild(explanation);
+          const explanationRow = document.createElement('tr');
+          explanationRow.appendChild(explanationCell);
+          row.after(explanationRow);
+        }
+      });
+      resultBox.className = 'result-box visible';
+      resultBox.innerHTML = `
+        <h3>Respuestas mostradas</h3>
+        <p class="result-score">Se han marcado las respuestas correctas y se muestran las explicaciones.</p>
+      `;
+    }
+
+    function getSelections() {
+      return currentQuestions.map((question, index) => {
+        const inputs = Array.from(document.querySelectorAll(`input[name="q-${index}"]`));
+        const values = inputs.filter(i => i.checked).map(i => Number(i.value));
+        return { question, values, inputs };
+      });
+    }
+
+    function reviewAnswers() {
+      const selections = getSelections();
+      let correctCount = 0;
+      selections.forEach((entry, index) => {
+        const { question, values, inputs } = entry;
+        const row = inputs[0]?.closest('tr');
+        const rightSet = new Set([question.answer]);
+        const selectedSet = new Set(values);
+        const isCorrect = values.length === 1 && rightSet.has(values[0]);
+        if (row) {
+          row.classList.toggle('correct', isCorrect);
+          row.classList.toggle('wrong', !isCorrect);
+        }
+        if (isCorrect) correctCount += 1;
+        inputs.forEach(input => {
+          const parent = input.parentElement;
+          parent.classList.remove('correct', 'wrong');
+          const value = Number(input.value);
+          if (rightSet.has(value)) parent.classList.add('correct');
+          if (input.checked && !rightSet.has(value)) parent.classList.add('wrong');
+        });
+        if (row) {
+          const nextRow = row.nextElementSibling;
+          if (nextRow?.querySelector('.explanation')) nextRow.remove();
+          const explanation = document.createElement('div');
+          explanation.className = 'explanation';
+          explanation.innerHTML = `<strong>Explicación:</strong> ${question.explanation}`;
+          const explanationCell = document.createElement('td');
+          explanationCell.colSpan = data[currentCategory].columns.length + 1;
+          explanationCell.appendChild(explanation);
+          const explanationRow = document.createElement('tr');
+          explanationRow.appendChild(explanationCell);
+          row.after(explanationRow);
+        }
+      });
+      const score = Math.round((correctCount / selections.length) * 100);
+      resultBox.className = 'result-box visible';
+      resultBox.innerHTML = `
+        <h3>Resultados</h3>
+        <p class="result-score">Obtuviste ${score}% de aciertos (${correctCount} de ${selections.length}).</p>
+      `;
+      if (score === 100) {
+        resultBox.innerHTML += `<p>¡Bien hecho! Has seleccionado todas las respuestas correctas.</p>`;
+      } else {
+        resultBox.innerHTML += `<p>Revisa las explicaciones para entender por qué algunas respuestas no son correctas.</p>`;
+      }
+    }
+
+    function resetQuiz() {
+      showFixedFirstPage[currentCategory] = false;
+      pageOrders[currentCategory] = shuffle(data[currentCategory].rows);
+      currentPage = 1;
+      renderQuestions();
+    }
+
+    categoryButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        categoryButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        currentCategory = button.dataset.category;
+        currentPage = 1;
+        showFixedFirstPage[currentCategory] = true;
+        delete pageOrders[currentCategory];
+        renderQuestions();
+      });
+    });
+
+    btnCheck.addEventListener('click', reviewAnswers);
+    btnReset.addEventListener('click', resetQuiz);
+    btnShowAnswers.addEventListener('click', showAnswers);
+    btnNextPage.addEventListener('click', () => {
+      const totalPages = Math.ceil(data[currentCategory].rows.length / 5);
+      if (currentPage === 1 && showFixedFirstPage[currentCategory]) {
+        pageOrders[currentCategory] = shuffle(data[currentCategory].rows.slice(5));
+        currentPage = 2;
+      } else {
+        currentPage = currentPage < totalPages ? currentPage + 1 : 1;
+      }
+      renderQuestions();
+    });
+    validateData();
+    renderQuestions();
+  </script>
+</body>
+</html>
